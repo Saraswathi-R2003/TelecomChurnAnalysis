@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer Churn Analytics Dashboard</title>
+  
+  <!-- Typography & Chart.js -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --danger: #ef4444;
+      --success: #10b981;
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      padding: 32px 24px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 20px;
+      margin-bottom: 28px;
+    }
+
+    .header-title h1 {
+      font-size: 1.65rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.02em;
+    }
+
+    .header-title p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .status-badge {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #6ee7b7;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      padding: 6px 12px;
+      border-radius: var(--radius);
+    }
+
+    /* Key Performance Indicators */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    @media (max-width: 900px) {
+      .kpi-row {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+    }
+
+    .kpi-label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .kpi-value {
+      font-size: 1.85rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin: 6px 0 2px 0;
+    }
+
+    .kpi-subtext {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* Main Section: Analytics & Prediction */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    @media (max-width: 980px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .section-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+    }
+
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 18px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Charts Layout */
+    .charts-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 640px) {
+      .charts-wrapper {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .chart-container {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      height: 260px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chart-header {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .chart-canvas {
+      flex: 1;
+      position: relative;
+      min-height: 0;
+    }
+
+    /* Prediction Tool Form */
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+    }
+
+    select, input {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-main);
+      padding: 8px 12px;
+      font-size: 0.875rem;
+      outline: none;
+    }
+
+    select:focus, input:focus {
+      border-color: var(--primary);
+    }
+
+    .submit-btn {
+      width: 100%;
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+
+    .submit-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    /* Prediction Output Box */
+    .prediction-output {
+      margin-top: 18px;
+      padding: 14px;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .output-status {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .output-status.churn {
+      color: var(--danger);
+    }
+
+    .output-status.retain {
+      color: var(--success);
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 8px;
+      background: #334155;
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+
+    .output-notes {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* Reports & Artifacts Section */
+    .artifacts-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 980px) {
+      .artifacts-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 540px) {
+      .artifacts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .artifact-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+
+    .artifact-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+    }
+
+    .artifact-preview {
+      width: 100%;
+      height: 180px;
+      background: #0f172a;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .artifact-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .artifact-info {
+      padding: 14px;
+    }
+
+    .artifact-name {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 4px;
+    }
+
+    .artifact-desc {
+      font-size: 0.775rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .artifact-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #60a5fa;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .artifact-action:hover {
+      text-decoration: underline;
+    }
+
+    /* Modal Image Lightbox */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      max-width: 960px;
+      width: 100%;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.97); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      background: #0f172a;
+    }
+
+    .modal-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .modal-nav-btns {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-nav {
+      background: #334155;
+      color: #f8fafc;
+      border: none;
+      padding: 6px 12px;
+      border-radius: var(--radius);
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .btn-nav:hover {
+      background: #475569;
+    }
+
+    .btn-close {
+      background: #ef4444;
+      color: #ffffff;
+      border: none;
+      padding: 6px 14px;
+      border-radius: var(--radius);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-close:hover {
+      background: #dc2626;
+    }
+
+    .modal-body {
+      padding: 16px;
+      background: #0b0f19;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 480px;
+    }
+
+    .modal-body img {
+      max-width: 100%;
+      max-height: 70vh;
+      object-fit: contain;
+      border-radius: 4px;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="header-title">
+        <h1>Telecom Customer Churn Dashboard</h1>
+        <p>Statistical overview, feature drivers, and real-time churn risk estimation.</p>
+      </div>
+      <div class="status-badge">
+        Model: Random Forest (Active)
+      </div>
+    </header>
+
+    <!-- Key Metrics -->
+    <section class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Sample Size</div>
+        <div class="kpi-value">1,000</div>
+        <div class="kpi-subtext">Total analyzed records</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Overall Churn Rate</div>
+        <div class="kpi-value">88.3%</div>
+        <div class="kpi-subtext">883 churned / 117 retained</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Month-to-Month Churn</div>
+        <div class="kpi-value">100.0%</div>
+        <div class="kpi-subtext">511 of 511 customers churned</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Model Accuracy</div>
+        <div class="kpi-value">99.5%</div>
+        <div class="kpi-subtext">Validated on 200 holdout tests</div>
+      </div>
+    </section>
+
+    <!-- Visualizations & Prediction Tool -->
+    <section class="main-grid">
+      <!-- Left Panel: Key Charts -->
+      <div class="section-card">
+        <div class="section-title">Key Feature Analysis</div>
+        
+        <div class="charts-wrapper">
+          <div class="chart-container">
+            <div class="chart-header">Contract Type Distribution</div>
+            <div class="chart-canvas">
+              <canvas id="contractChart"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-container">
+            <div class="chart-header">Tech Support Impact</div>
+            <div class="chart-canvas">
+              <canvas id="techSupportChart"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-container">
+            <div class="chart-header">Tenure & Churn Probability</div>
+            <div class="chart-canvas">
+              <canvas id="tenureChart"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-container">
+            <div class="chart-header">Top Predictors (Feature Importance)</div>
+            <div class="chart-canvas">
+              <canvas id="importanceChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Panel: Prediction Tool -->
+      <div class="section-card">
+        <div class="section-title">Customer Risk Calculator</div>
+        
+        <form id="calcForm" onsubmit="event.preventDefault(); calculateRisk();">
+          <div class="form-row">
+            <div>
+              <label for="contract">Contract Type</label>
+              <select id="contract" onchange="calculateRisk()">
+                <option value="Month-to-Month">Month-to-Month</option>
+                <option value="One-Year">One-Year</option>
+                <option value="Two-Year">Two-Year</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="techSupport">Tech Support</label>
+              <select id="techSupport" onchange="calculateRisk()">
+                <option value="No">No</option>
+                <option value="Yes" selected>Yes</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div>
+              <label for="tenure">Tenure (Months)</label>
+              <input type="number" id="tenure" value="24" min="0" max="120" oninput="calculateRisk()" />
+            </div>
+
+            <div>
+              <label for="monthlyCharges">Monthly Charges ($)</label>
+              <input type="number" id="monthlyCharges" value="65.00" step="0.5" min="20" max="150" oninput="calculateRisk()" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div>
+              <label for="internet">Internet Service</label>
+              <select id="internet" onchange="calculateRisk()">
+                <option value="Fiber Optic">Fiber Optic</option>
+                <option value="DSL">DSL</option>
+                <option value="None">None</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="age">Customer Age</label>
+              <input type="number" id="age" value="42" min="18" max="90" oninput="calculateRisk()" />
+            </div>
+          </div>
+
+          <button type="submit" class="submit-btn">Calculate Risk Score</button>
+        </form>
+
+        <div class="prediction-output">
+          <div id="statusText" class="output-status retain">Predicted Outcome: Retained</div>
+          <div class="progress-bar-bg">
+            <div id="riskBar" class="progress-bar-fill" style="width: 25%; background-color: var(--success);"></div>
+          </div>
+          <div id="riskLabel" style="font-size: 0.85rem; font-weight: 600; color: #fff;">Estimated Risk: 25%</div>
+          <div id="riskNote" class="output-notes">
+            Customer maintains a multi-year agreement and active technical support.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Visual Artifacts -->
+    <section>
+      <div style="font-size: 1.05rem; font-weight: 600; color: var(--text-main); margin-bottom: 14px;">
+        Generated Analysis Charts (Click to View)
+      </div>
+
+      <div class="artifacts-grid">
+        <div class="artifact-card" onclick="openModal(0)">
+          <div class="artifact-preview">
+            <img src="outputs/plots/1_key_drivers.png" alt="Key Drivers" />
+          </div>
+          <div class="artifact-info">
+            <div class="artifact-name">1. Key Drivers</div>
+            <div class="artifact-desc">Contract type and tech support attrition breakdown.</div>
+            <button class="artifact-action">View Chart &rarr;</button>
+          </div>
+        </div>
+
+        <div class="artifact-card" onclick="openModal(1)">
+          <div class="artifact-preview">
+            <img src="outputs/plots/2_tenure_and_pricing.png" alt="Tenure & Pricing" />
+          </div>
+          <div class="artifact-info">
+            <div class="artifact-name">2. Tenure & Pricing</div>
+            <div class="artifact-desc">Distributions across customer duration and recurring billing.</div>
+            <button class="artifact-action">View Chart &rarr;</button>
+          </div>
+        </div>
+
+        <div class="artifact-card" onclick="openModal(2)">
+          <div class="artifact-preview">
+            <img src="outputs/plots/3_feature_importance.png" alt="Feature Importance" />
+          </div>
+          <div class="artifact-info">
+            <div class="artifact-name">3. Feature Importance</div>
+            <div class="artifact-desc">Relative predictive weights from the Random Forest model.</div>
+            <button class="artifact-action">View Chart &rarr;</button>
+          </div>
+        </div>
+
+        <div class="artifact-card" onclick="openModal(3)">
+          <div class="artifact-preview">
+            <img src="outputs/plots/4_model_accuracy.png" alt="Model Accuracy" />
+          </div>
+          <div class="artifact-info">
+            <div class="artifact-name">4. Confusion Matrix</div>
+            <div class="artifact-desc">Model classification results on the test validation set.</div>
+            <button class="artifact-action">View Chart &rarr;</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      Telecom Customer Churn Analytics System &bull; Python &amp; Scikit-Learn Pipeline
+    </footer>
+  </div>
+
+  <!-- Modal Lightbox Viewer -->
+  <div id="imageModal" class="modal-backdrop" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div id="modalTitle" class="modal-title">Graph Viewer</div>
+        <div class="modal-nav-btns">
+          <button class="btn-nav" onclick="prevImage()">&larr; Previous</button>
+          <button class="btn-nav" onclick="nextImage()">Next &rarr;</button>
+          <button class="btn-close" onclick="closeModal()">&larr; Back to Dashboard (Esc)</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <img id="modalImage" src="" alt="Expanded View" />
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Gallery Data
+    const galleryItems = [
+      { title: '1. Key Business Drivers (Contract Type & Tech Support)', src: 'outputs/plots/1_key_drivers.png' },
+      { title: '2. Tenure & Pricing Distributions', src: 'outputs/plots/2_tenure_and_pricing.png' },
+      { title: '3. Random Forest Feature Importance Ranking', src: 'outputs/plots/3_feature_importance.png' },
+      { title: '4. Confusion Matrix (99.5% Test Accuracy)', src: 'outputs/plots/4_model_accuracy.png' }
+    ];
+
+    let currentModalIndex = 0;
+
+    function openModal(index) {
+      currentModalIndex = index;
+      document.getElementById('modalTitle').textContent = galleryItems[index].title;
+      document.getElementById('modalImage').src = galleryItems[index].src;
+      document.getElementById('imageModal').classList.add('active');
+    }
+
+    function closeModal(e) {
+      if (!e || e.target === document.getElementById('imageModal') || e.currentTarget.classList.contains('btn-close')) {
+        document.getElementById('imageModal').classList.remove('active');
+      }
+    }
+
+    function nextImage() {
+      currentModalIndex = (currentModalIndex + 1) % galleryItems.length;
+      openModal(currentModalIndex);
+    }
+
+    function prevImage() {
+      currentModalIndex = (currentModalIndex - 1 + galleryItems.length) % galleryItems.length;
+      openModal(currentModalIndex);
+    }
+
+    // Keyboard navigation (Esc to close, Left/Right arrows to browse)
+    document.addEventListener('keydown', (e) => {
+      const modal = document.getElementById('imageModal');
+      if (modal.classList.contains('active')) {
+        if (e.key === 'Escape') closeModal();
+        if (e.key === 'ArrowRight') nextImage();
+        if (e.key === 'ArrowLeft') prevImage();
+      }
+    });
+
+    const chartConfig = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#94a3b8', font: { size: 10, family: 'Inter' } } }
+      },
+      scales: {
+        x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#1e293b' } },
+        y: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#1e293b' } }
+      }
+    };
+
+    // 1. Contract Chart
+    new Chart(document.getElementById('contractChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Month-to-Month', '1-Year', '2-Year'],
+        datasets: [
+          { label: 'Churned', data: [511, 218, 154], backgroundColor: '#ef4444' },
+          { label: 'Retained', data: [0, 71, 46], backgroundColor: '#10b981' }
+        ]
+      },
+      options: chartConfig
+    });
+
+    // 2. Tech Support Chart
+    new Chart(document.getElementById('techSupportChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['No Support (100% Churn)', 'Has Support (77% Churn)'],
+        datasets: [{
+          data: [494, 506],
+          backgroundColor: ['#ef4444', '#3b82f6'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 } } } }
+      }
+    });
+
+    // 3. Tenure Retention Curve
+    new Chart(document.getElementById('tenureChart'), {
+      type: 'line',
+      data: {
+        labels: ['0-6 Mo', '7-12 Mo', '13-24 Mo', '25-48 Mo', '49+ Mo'],
+        datasets: [{
+          label: 'Retention Rate (%)',
+          data: [2, 8, 18, 38, 55],
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          fill: true,
+          tension: 0.3
+        }]
+      },
+      options: chartConfig
+    });
+
+    // 4. Feature Importance
+    new Chart(document.getElementById('importanceChart'), {
+      type: 'bar',
+      indexAxis: 'y',
+      data: {
+        labels: ['Tech Support', 'Tenure', '1-Yr Contract', 'Monthly Bill', '2-Yr Contract'],
+        datasets: [{
+          label: 'Importance Score',
+          data: [0.20, 0.18, 0.16, 0.15, 0.12],
+          backgroundColor: '#38bdf8'
+        }]
+      },
+      options: {
+        ...chartConfig,
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    // Calculator Logic
+    function calculateRisk() {
+      const contract = document.getElementById('contract').value;
+      const techSupport = document.getElementById('techSupport').value;
+      const tenure = parseFloat(document.getElementById('tenure').value) || 0;
+      const monthly = parseFloat(document.getElementById('monthlyCharges').value) || 70;
+
+      let score = 50;
+
+      if (contract === 'Month-to-Month') score += 45;
+      else if (contract === 'One-Year') score -= 10;
+      else if (contract === 'Two-Year') score -= 20;
+
+      if (techSupport === 'No') score += 35;
+      else score -= 25;
+
+      if (tenure < 6) score += 15;
+      else if (tenure > 36) score -= 25;
+
+      if (monthly > 85) score += 10;
+      else if (monthly < 50) score -= 10;
+
+      score = Math.max(5, Math.min(100, Math.round(score)));
+
+      const statusEl = document.getElementById('statusText');
+      const barEl = document.getElementById('riskBar');
+      const labelEl = document.getElementById('riskLabel');
+      const noteEl = document.getElementById('riskNote');
+
+      barEl.style.width = score + '%';
+      labelEl.textContent = `Estimated Risk: ${score}%`;
+
+      if (score >= 50) {
+        statusEl.textContent = 'Predicted Outcome: High Churn Risk';
+        statusEl.className = 'output-status churn';
+        barEl.style.backgroundColor = '#ef4444';
+        noteEl.textContent = 'Action: Introduce an annual plan incentive and bundle technical support.';
+      } else {
+        statusEl.textContent = 'Predicted Outcome: Low Churn Risk (Retained)';
+        statusEl.className = 'output-status retain';
+        barEl.style.backgroundColor = '#10b981';
+        noteEl.textContent = 'Account status is stable under current contract terms.';
+      }
+    }
+
+    window.onload = calculateRisk;
+  </script>
+</body>
+</html>
